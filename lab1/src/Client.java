@@ -27,7 +27,7 @@ class ClientSomthing {
             inputUser = new BufferedReader(new InputStreamReader(System.in));
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            nickname = pressNickname() + "\0";
+            nickname = pressNickname() ;
             new ReadMsg().start();
             new WriteMsg().start();
         } catch (IOException e) {
@@ -73,13 +73,19 @@ class ClientSomthing {
                         break;
                     }
 
-                    String millisStr = str.substring( str.indexOf("<") + 1, str.indexOf("> "));
+                    int d1 = str.indexOf("\0");
+                    int d2 = str.indexOf("\0", d1+1);
+                    String millisStr = str.substring(0, d1);
+                    String name = str.substring(d1+1, d2);
+                    String text = str.substring(d2+1);
+
                     long millisLong = Long.parseLong(millisStr);
                     Date time = new Date(millisLong);
                     SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
                     String dtime = dt1.format(time);
 
-                    System.out.println("<" + dtime + ">" + str.substring(str.indexOf("> ") +1, str.indexOf("\0")) + str.substring(str.indexOf("\0") + 1));
+
+                    System.out.println("<" + dtime + "> "+ name + ": "+ text);
                 }
             } catch (IOException e) {
                 System.out.println("Sorry, connection has been closed");
@@ -105,7 +111,7 @@ class ClientSomthing {
                         ClientSomthing.this.downService();
                         break;
                     } else {
-                        out.write("<" + currentTime + "> " + "" + nickname + ": " + userWord + "\n");
+                        out.write( currentTime + "\0"  + nickname + "\0" + userWord + "\n");
                     }
                     out.flush();
                 } catch (IOException e) {

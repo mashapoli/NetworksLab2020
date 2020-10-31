@@ -1,8 +1,13 @@
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 class ServerSomthing extends Thread {
 
@@ -28,20 +33,21 @@ class ServerSomthing extends Thread {
                         this.downService();
                         break;
                     }
-                    String millisStr = word.substring(word.indexOf("<") + 1, word.indexOf("> "));
+                    String millisStr = word.substring(0,word.indexOf("\0"));
+                    String msg = word.substring( word.indexOf("\0"));
+
                     long millisLong = Long.parseLong(millisStr);
                     Date time = new Date(millisLong);
                     SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
                     String dtime = dt1.format(time);
-                    System.out.println("Echoing: " + "<" + dtime + ">" +  word.substring(word.indexOf("> ") +1));
+
+                    System.out.println(dtime + " " + msg);
                     Thread.sleep(5000);
                     for (ServerSomthing vr : Server.serverList) {
                         vr.send(word);
                     }
                 }
-            } catch (NullPointerException ignored) {} catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            } catch (NullPointerException | InterruptedException ignored) {}
 
 
         } catch (IOException e) {
