@@ -84,7 +84,7 @@ class ClientSomthing {
             } catch (IOException e) {
                 System.out.println("Sorry, connection has been closed");
             } finally {
-                System.out.println("Sorry, check connect");
+//                System.out.println("Sorry, check connect");
                 ClientSomthing.this.downService();
             }
 
@@ -121,7 +121,7 @@ class ClientSomthing {
 public class Client {
 
     public static String ipAddr = "localhost";
-    public static int port = 8080;
+    public static int port = 1234;
 
 
     public static void main(String[] args) {

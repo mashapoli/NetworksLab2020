@@ -77,7 +77,7 @@ class ServerSomthing extends Thread {
 
 public class Server {
 
-    public static final int PORT = 8080;
+    public static final int PORT = 1234;
     public static LinkedList<ServerSomthing> serverList = new LinkedList<>();
 
 
