@@ -1,13 +1,9 @@
 import java.io.*;
-import java.lang.reflect.Array;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 class ServerSomthing extends Thread {
 
