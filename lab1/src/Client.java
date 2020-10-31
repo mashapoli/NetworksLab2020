@@ -27,7 +27,7 @@ class ClientSomthing {
             inputUser = new BufferedReader(new InputStreamReader(System.in));
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            nickname = pressNickname();
+            nickname = pressNickname() + "\0";
             new ReadMsg().start();
             new WriteMsg().start();
         } catch (IOException e) {
@@ -79,7 +79,7 @@ class ClientSomthing {
                     SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
                     String dtime = dt1.format(time);
 
-                    System.out.println("<" + dtime + ">" + str.substring(str.indexOf("> ") +1));
+                    System.out.println("<" + dtime + ">" + str.substring(str.indexOf("> ") +1, str.indexOf("\0")) + str.substring(str.indexOf("\0") + 1));
                 }
             } catch (IOException e) {
                 System.out.println("Sorry, connection has been closed");
@@ -105,7 +105,7 @@ class ClientSomthing {
                         ClientSomthing.this.downService();
                         break;
                     } else {
-                        out.write("<" + currentTime + "> " + "[" + nickname + "]\0: " + userWord + "\0\n");
+                        out.write("<" + currentTime + "> " + "" + nickname + ": " + userWord + "\n");
                     }
                     out.flush();
                 } catch (IOException e) {
