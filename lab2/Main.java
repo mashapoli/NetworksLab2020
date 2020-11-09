@@ -1,76 +1,97 @@
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.IntBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
+
+import static java.lang.System.currentTimeMillis;
 
 public class Main {
-    static BufferedReader userInputReader = null;
+//    static BufferedReader userInputReader = null;
     static BufferedReader inputUser = null;
     private static String userName = null;
-    private static boolean writeMode = true;
+    private static Map<SelectionKey, Boolean> connectMap = new HashMap<>();
 
-
-    public static boolean processReadySet(Set readySet) throws Exception {
+    public static boolean processReadySet(Selector selector, Set readySet) throws Exception {
         Iterator iterator = readySet.iterator();
         while (iterator.hasNext()) {
             SelectionKey key = (SelectionKey) iterator.next();
             iterator.remove();
-            if (key.isConnectable()) {
+            if (!connectMap.getOrDefault(key, false) && key.isConnectable()) {
+                connectMap.put(key, true);
+                System.out.println("key = " + key);
                 boolean connected = processConnect(key);
                 System.out.println("connected = " + connected);
                 if (!connected) {
                     return true; // Exit
                 }
+            } else if (key.isConnectable()){
+                System.exit(0);
             }
-            System.out.println("writeMode = " + writeMode);
-            if (!writeMode && key.isReadable()) {
-                writeMode = true;
+            if (key.isReadable()) {
                 String msg = processRead(key);
-                System.out.println("msg = " + msg);
-                int d1 = msg.indexOf("\0");
-                int d2 = msg.indexOf("\0", d1+1);
-                String millisStr = msg.substring(0, d1);
-                String name = msg.substring(d1+1, d2);
-                String text = msg.substring(d2+1);
+                if(!msg.isEmpty()) {
+                    System.out.println("msg = " + msg);
+                    int d1 = msg.indexOf("\0");
+                    int d2 = msg.indexOf("\0", d1 + 1);
+                    String millisStr = msg.substring(0, d1);
+                    String name = msg.substring(d1 + 1, d2);
+                    String text = msg.substring(d2 + 1);
 
-                long millisLong = Long.parseLong(millisStr);
-                Date time = new Date(millisLong);
-                SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
-                String dtime = dt1.format(time);
-                msg =  "<" + dtime + "> "+ name + ": "+ text;
+                    long millisLong = Long.parseLong(millisStr);
+                    Date time = new Date(millisLong);
+                    SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
+                    String dtime = dt1.format(time);
+                    msg = "<" + dtime + "> " + name + ": " + text;
 //                System.out.println("[Server]: " + dtime + name + text);
-                System.out.println(msg);
-                System.out.println("Thread.currentThread() = " + Thread.currentThread());
-                System.out.flush();
-            }
-            if (writeMode && key.isWritable()) {
-                writeMode = false;
-                System.out.println("Thread.currentThread() = " + Thread.currentThread());
-                System.out.print("msg:");
-                String msg = userName + "\0" + userInputReader.readLine();
-                long currentTime = System.currentTimeMillis();
-//                msg = currentTime +"\0" + userName + "\0" + msg;
-                msg = currentTime + "\0" + msg;
-
-                if (msg.equalsIgnoreCase("bye")) {
-                    return true; // Exit
+                    System.out.println(msg);
+                    System.out.println("Thread.currentThread() = " + Thread.currentThread());
+                    System.out.flush();
                 }
-                SocketChannel sChannel = (SocketChannel) key.channel();
-                ByteBuffer buffer = ByteBuffer.wrap(msg.getBytes());
+            }
+            if (key.isWritable()) {
+//                System.out.println("Thread.currentThread() = " + Thread.currentThread());
+//                System.out.print("msg:");
+
+                try {
+                    for (int i = 0; i < 100000; i++) {
+                        if (inputUser.ready()) {
+//                            System.out.println(reader.readLine());
+                            String userLine = inputUser.readLine();
+                            if(!userLine.isEmpty()) {
+                                System.out.println("s = " + userLine);
+                                String msg = userName + "\0" + userLine;
+                                long currentTime = currentTimeMillis();
+//                msg = currentTime +"\0" + userName + "\0" + msg;
+                                msg = currentTime + "\0" + msg;
+
+                                if (userLine.equalsIgnoreCase("bye")) {
+                                    System.exit(0);
+                                }
+                                SocketChannel sChannel = (SocketChannel) key.channel();
+                                ByteBuffer buffer = ByteBuffer.wrap(msg.getBytes());
 //                buffer = ByteBuffer.wrap(userName.getBytes());
-                System.out.println("buffer = " + buffer);
-                sChannel.write(buffer);
+                                System.out.println("buffer = " + buffer);
+                                sChannel.write(buffer);
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+
             }
         }
         return false; // Not done yet
@@ -89,15 +110,19 @@ public class Main {
 
     public static String processRead(SelectionKey key) throws Exception {
         SocketChannel sChannel = (SocketChannel) key.channel();
-        System.out.println("sChannel = " + sChannel);
+//        System.out.println("sChannel = " + sChannel);
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        sChannel.read(buffer);
+        int status = sChannel.read(buffer);
+        if(status == -1) {
+            System.out.println("status = " + status);
+            System.exit(0);
+        }
         buffer.flip();
         Charset charset = Charset.forName("UTF-8");
         CharsetDecoder decoder = charset.newDecoder();
         CharBuffer charBuffer = decoder.decode(buffer);
         String msg = charBuffer.toString();
-        System.out.println("msgProcessRead = " + msg);
+//        System.out.println("msgProcessRead = " + msg);
         return msg;
     }
 
@@ -112,11 +137,11 @@ public class Main {
         int operations = SelectionKey.OP_CONNECT | SelectionKey.OP_READ | SelectionKey.OP_WRITE;
         channel.register(selector, operations);
 
-        userInputReader = new BufferedReader(new InputStreamReader(System.in));
+//        userInputReader = new BufferedReader(new InputStreamReader(System.in));
         inputUser = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
             if (selector.select() > 0) {
-                boolean doneStatus = processReadySet(selector.selectedKeys());
+                boolean doneStatus = processReadySet(selector, selector.selectedKeys());
                 if (doneStatus) {
                     break;
                 }

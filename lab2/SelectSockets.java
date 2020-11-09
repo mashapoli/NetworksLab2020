@@ -98,24 +98,28 @@ public class SelectSockets {
         SocketChannel socketChannel = (SocketChannel) key.channel(  );
         int count;
 
-        buffer.clear(  );            // Empty buffer
+        buffer.clear();            // Empty buffer
 
         while ((count = socketChannel.read (buffer)) > 0) {
-            buffer.flip(  );        // Make buffer readable
+            buffer.flip();        // Make buffer readable
 
-            while (buffer.hasRemaining(  )) {
+            while (buffer.hasRemaining()) {
                 System.out.println("channels = " + channels);
                 for (Iterator<SocketChannel> it = channels.iterator(); it.hasNext();) {
                     SocketChannel ch = it.next();
+                    try {
                     ch.write(it.hasNext() ? buffer.duplicate() : buffer);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
-            buffer.clear(  );        // Empty buffer
+            buffer.clear();        // Empty buffer
         }
 
         if (count < 0) {
-            socketChannel.close(  );
+            socketChannel.close();
         }
     }
 
