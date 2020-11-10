@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ServerNIO {
-    public static int PORT_NUMBER = 1234;
 
     public static void main(String[] argv) throws Exception {
         new ServerNIO().go(argv);
@@ -19,7 +18,7 @@ public class ServerNIO {
     {
         int port = 1234;
 
-        if (argv.length > 0) {    // Override default listen port
+        if (argv.length > 0) {    
             port = Integer.parseInt (argv [0]);
         }
 
@@ -40,7 +39,7 @@ public class ServerNIO {
             int n = selector.select(  );
 
             if (n == 0) {
-                continue;    // nothing to do
+                continue;    
             }
 
             Iterator it = selector.selectedKeys().iterator(  );
@@ -79,7 +78,7 @@ public class ServerNIO {
             throws Exception
     {
         if (channel == null) {
-            return;        // could happen
+            return;       
         }
 
         channel.configureBlocking (false);
@@ -90,8 +89,6 @@ public class ServerNIO {
     }
 
 
-//    private ByteBuffer buffer = ByteBuffer.allocateDirect (10018);
-//    private ByteBuffer buffer = ByteBuffer.allocateDirect(1048576);
     private ByteBuffer buffer = ByteBuffer.allocate(210000);
 
     protected void readDataFromSocket(SelectionKey key, List<SocketChannel> channels)
@@ -100,10 +97,10 @@ public class ServerNIO {
         SocketChannel socketChannel = (SocketChannel) key.channel(  );
         int count;
 
-        buffer.clear();            // Empty buffer
+        buffer.clear();           
 
         while ((count = socketChannel.read (buffer)) > 0) {
-            buffer.flip();        // Make buffer readable
+            buffer.flip();        
 
             while (buffer.hasRemaining()) {
                 System.out.println("channels = " + channels);
@@ -117,7 +114,7 @@ public class ServerNIO {
                 }
             }
 
-            buffer.clear();        // Empty buffer
+            buffer.clear();        
         }
 
         if (count < 0) {
@@ -131,9 +128,7 @@ public class ServerNIO {
     {
         buffer.clear();
         long currentTime = System.currentTimeMillis();
-//        String msg  = currentTime + "\0" + "cdsf" +"\0" + "Hi there!\r\n";
-//        buffer.put (msg.getBytes(  ));
-       buffer.flip(  );
+        buffer.flip(  );
 
         System.out.println("hel");
         channel.write (buffer);
