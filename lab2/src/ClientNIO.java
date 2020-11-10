@@ -31,18 +31,18 @@ public class ClientNIO {
                 connectMap.put(key, true);
                 boolean connected = processConnect(key);
                 if (!connected) {
-                    return true; 
+                    return true;
                 }
-            } else if (key.isConnectable()){
+            } else if (key.isConnectable()) {
                 System.exit(0);
             }
             if (key.isReadable()) {
                 String msg = processRead(key);
-                if(!msg.isEmpty()) {
+                if (!msg.isEmpty()) {
                     int d3 = 0;
                     do {
                         msg = msg.substring(d3);
-                        if(msg.startsWith("\0")) {
+                        if (msg.startsWith("\0")) {
                             msg = msg.substring(1);
                         }
                         int d1 = msg.indexOf("\0");
@@ -54,7 +54,7 @@ public class ClientNIO {
                         d3 = msg.indexOf("\0", d2 + 1);
                         String millisStr = msg.substring(0, d1);
                         String name = msg.substring(d1 + 1, d2);
-                        String text = d3 != -1 ? msg.substring(d2 + 1, d3) : msg.substring(d2 +1);
+                        String text = d3 != -1 ? msg.substring(d2 + 1, d3) : msg.substring(d2 + 1);
 
                         long millisLong = Long.parseLong(millisStr);
                         Date time = new Date(millisLong);
@@ -63,25 +63,23 @@ public class ClientNIO {
                         String finalMsg = "<" + dtime + "> " + name + ": " + text;
                         System.out.println(finalMsg);
                         System.out.flush();
-                    } while (d3 != -1 && d3 +1 < msg.length());
+                    } while (d3 != -1 && d3 + 1 < msg.length());
                 }
             }
             if (key.isWritable()) {
                 try {
-                    for (int i = 0; i < 100000; i++) {
-                        if (inputUser.ready()) {
-                            String userLine = inputUser.readLine();
-                            if(!userLine.isEmpty()) {
-                                if (userLine.equalsIgnoreCase("bye")) {
-                                    return true;
-                                }
-                                String msg = userName + "\0" + userLine;
-                                long currentTime = currentTimeMillis();
-                                msg = currentTime + "\0" + msg + "\0";
-                                SocketChannel sChannel = (SocketChannel) key.channel();
-                                ByteBuffer buffer = ByteBuffer.wrap(msg.getBytes());
-                                sChannel.write(buffer);
+                    if (inputUser.ready()) {
+                        String userLine = inputUser.readLine();
+                        if (!userLine.isEmpty()) {
+                            if (userLine.equalsIgnoreCase("bye")) {
+                                return true;
                             }
+                            String msg = userName + "\0" + userLine;
+                            long currentTime = currentTimeMillis();
+                            msg = currentTime + "\0" + msg + "\0";
+                            SocketChannel sChannel = (SocketChannel) key.channel();
+                            ByteBuffer buffer = ByteBuffer.wrap(msg.getBytes());
+                            sChannel.write(buffer);
                         }
                     }
                 } catch (IOException e) {
@@ -108,7 +106,7 @@ public class ClientNIO {
         SocketChannel sChannel = (SocketChannel) key.channel();
         ByteBuffer buffer = ByteBuffer.allocate(210000);
         int status = sChannel.read(buffer);
-        if(status == -1) {
+        if (status == -1) {
             System.out.println("status = " + status);
             System.exit(0);
         }
