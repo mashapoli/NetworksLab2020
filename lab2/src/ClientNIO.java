@@ -17,7 +17,7 @@ import java.util.*;
 
 import static java.lang.System.currentTimeMillis;
 
-public class Main {
+public class ClientNIO {
 //    static BufferedReader userInputReader = null;
     static BufferedReader inputUser = null;
     private static String userName = null;
@@ -30,9 +30,9 @@ public class Main {
             iterator.remove();
             if (!connectMap.getOrDefault(key, false) && key.isConnectable()) {
                 connectMap.put(key, true);
-                System.out.println("key = " + key);
+//                System.out.println("key = " + key);
                 boolean connected = processConnect(key);
-                System.out.println("connected = " + connected);
+//                System.out.println("connected = " + connected);
                 if (!connected) {
                     return true; // Exit
                 }
@@ -41,23 +41,40 @@ public class Main {
             }
             if (key.isReadable()) {
                 String msg = processRead(key);
+//                System.out.println("msgBefore = " + msg);
                 if(!msg.isEmpty()) {
-                    System.out.println("msg = " + msg);
-                    int d1 = msg.indexOf("\0");
-                    int d2 = msg.indexOf("\0", d1 + 1);
-                    String millisStr = msg.substring(0, d1);
-                    String name = msg.substring(d1 + 1, d2);
-                    String text = msg.substring(d2 + 1);
+//                    System.out.println("msg = " + msg);
+                    int d3 = 0;
+                    do {
+                        msg = msg.substring(d3);
+                        if(msg.startsWith("\0")) {
+                            msg = msg.substring(1);
+                        }
+                        int d1 = msg.indexOf("\0");
+                        if (d1 == -1 || d1 + 1 == msg.length()) {
+                            System.out.print(msg);
+                            break;
+                        }
+                        int d2 = msg.indexOf("\0", d1 + 1);
+                        d3 = msg.indexOf("\0", d2 + 1);
+//                        System.out.println("msg.length() = " + msg.length());
+                        String millisStr = msg.substring(0, d1);
+//                        System.out.println("millisStr = " + millisStr);
+                        String name = msg.substring(d1 + 1, d2);
+//                        System.out.println("name = " + name);
+                        String text = d3 != -1 ? msg.substring(d2 + 1, d3) : msg.substring(d2 +1);
+//                        System.out.println("text = " + text);
 
-                    long millisLong = Long.parseLong(millisStr);
-                    Date time = new Date(millisLong);
-                    SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
-                    String dtime = dt1.format(time);
-                    msg = "<" + dtime + "> " + name + ": " + text;
+                        long millisLong = Long.parseLong(millisStr);
+                        Date time = new Date(millisLong);
+                        SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
+                        String dtime = dt1.format(time);
+                        String finalMsg = "<" + dtime + "> " + name + ": " + text;
 //                System.out.println("[Server]: " + dtime + name + text);
-                    System.out.println(msg);
-                    System.out.println("Thread.currentThread() = " + Thread.currentThread());
-                    System.out.flush();
+                        System.out.println(finalMsg);
+//                    System.out.println("Thread.currentThread() = " + Thread.currentThread());
+                        System.out.flush();
+                    } while (d3 != -1 && d3 +1 < msg.length());
                 }
             }
             if (key.isWritable()) {
@@ -70,19 +87,19 @@ public class Main {
 //                            System.out.println(reader.readLine());
                             String userLine = inputUser.readLine();
                             if(!userLine.isEmpty()) {
-                                System.out.println("s = " + userLine);
+                                if (userLine.equalsIgnoreCase("bye")) {
+                                    return true;
+                                }
+//                                System.out.println("s = " + userLine);
                                 String msg = userName + "\0" + userLine;
                                 long currentTime = currentTimeMillis();
 //                msg = currentTime +"\0" + userName + "\0" + msg;
-                                msg = currentTime + "\0" + msg;
-
-                                if (userLine.equalsIgnoreCase("bye")) {
-                                    System.exit(0);
-                                }
+                                msg = currentTime + "\0" + msg + "\0";
                                 SocketChannel sChannel = (SocketChannel) key.channel();
                                 ByteBuffer buffer = ByteBuffer.wrap(msg.getBytes());
 //                buffer = ByteBuffer.wrap(userName.getBytes());
-                                System.out.println("buffer = " + buffer);
+//                                System.out.println("buffer = " + buffer);
+//                                System.out.println("msgInProc = " + msg);
                                 sChannel.write(buffer);
                             }
                         }
@@ -94,7 +111,7 @@ public class Main {
 
             }
         }
-        return false; // Not done yet
+        return false;
     }
 
     public static boolean processConnect(SelectionKey key) throws Exception {
@@ -111,7 +128,8 @@ public class Main {
     public static String processRead(SelectionKey key) throws Exception {
         SocketChannel sChannel = (SocketChannel) key.channel();
 //        System.out.println("sChannel = " + sChannel);
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+//        ByteBuffer buffer = ByteBuffer.allocateDirect(1048576);
+        ByteBuffer buffer = ByteBuffer.allocate(210000);
         int status = sChannel.read(buffer);
         if(status == -1) {
             System.out.println("status = " + status);

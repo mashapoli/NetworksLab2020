@@ -7,11 +7,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class SelectSockets {
+public class ServerNIO {
     public static int PORT_NUMBER = 1234;
 
     public static void main(String[] argv) throws Exception {
-        new SelectSockets().go(argv);
+        new ServerNIO().go(argv);
     }
 
     public void go (String [] argv)
@@ -90,7 +90,9 @@ public class SelectSockets {
     }
 
 
-    private ByteBuffer buffer = ByteBuffer.allocateDirect (1024);
+//    private ByteBuffer buffer = ByteBuffer.allocateDirect (10018);
+//    private ByteBuffer buffer = ByteBuffer.allocateDirect(1048576);
+    private ByteBuffer buffer = ByteBuffer.allocate(210000);
 
     protected void readDataFromSocket(SelectionKey key, List<SocketChannel> channels)
             throws Exception
@@ -107,10 +109,10 @@ public class SelectSockets {
                 System.out.println("channels = " + channels);
                 for (Iterator<SocketChannel> it = channels.iterator(); it.hasNext();) {
                     SocketChannel ch = it.next();
-                    try {
-                    ch.write(it.hasNext() ? buffer.duplicate() : buffer);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    if(!ch.isConnected()) {
+                        it.remove();
+                    } else {
+                        ch.write(it.hasNext() ? buffer.duplicate() : buffer);
                     }
                 }
             }
@@ -127,7 +129,7 @@ public class SelectSockets {
     private void sayHello (SocketChannel channel)
             throws Exception
     {
-        buffer.clear(  );
+        buffer.clear();
         long currentTime = System.currentTimeMillis();
 //        String msg  = currentTime + "\0" + "cdsf" +"\0" + "Hi there!\r\n";
 //        buffer.put (msg.getBytes(  ));
