@@ -1,9 +1,12 @@
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 
 import java.net.ServerSocket;
 import java.net.InetSocketAddress;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -13,12 +16,13 @@ public class ServerNIO {
         new ServerNIO().go(argv);
     }
 
+    private Selector selector;
     public void go (String [] argv)
             throws Exception
     {
         int port = 1234;
 
-        if (argv.length > 0) {    
+        if (argv.length > 0) {   
             port = Integer.parseInt (argv [0]);
         }
 
@@ -26,7 +30,7 @@ public class ServerNIO {
 
         ServerSocketChannel serverChannel = ServerSocketChannel.open(  );
         ServerSocket serverSocket = serverChannel.socket(  );
-        Selector selector = Selector.open(  );
+       this.selector = Selector.open(  );
 
         serverSocket.bind (new InetSocketAddress (port));
 
@@ -39,7 +43,7 @@ public class ServerNIO {
             int n = selector.select(  );
 
             if (n == 0) {
-                continue;    
+                continue;   
             }
 
             Iterator it = selector.selectedKeys().iterator(  );
@@ -59,13 +63,10 @@ public class ServerNIO {
                     registerChannel (selector, channel,
                             SelectionKey.OP_READ | SelectionKey.OP_WRITE);
                     System.out.println("accept");
-                    sayHello (channel);
                 }
 
                 if (key.isReadable(  )) {
-                    System.out.println("read");
-                    readDataFromSocket (key, channels);
-                    System.out.println("afterRead" + key.toString());
+                    readDataFromSocket(key);
                 }
 
                 it.remove(  );
@@ -78,7 +79,7 @@ public class ServerNIO {
             throws Exception
     {
         if (channel == null) {
-            return;       
+            return;      
         }
 
         channel.configureBlocking (false);
@@ -89,53 +90,63 @@ public class ServerNIO {
     }
 
 
-    private ByteBuffer buffer = ByteBuffer.allocate(210000);
+    private ByteBuffer buffer = ByteBuffer.allocate(30);
 
-    protected void readDataFromSocket(SelectionKey key, List<SocketChannel> channels)
-            throws Exception
-    {
-        SocketChannel socketChannel = (SocketChannel) key.channel(  );
-        int count;
 
-        buffer.clear();           
+    private void readDataFromSocket(SelectionKey key) throws IOException {
+        SocketChannel socketChannel = (SocketChannel) key.channel();
+        StringBuilder stringBuilder = new StringBuilder();
 
-        while ((count = socketChannel.read (buffer)) > 0) {
-            buffer.flip();        
-
-            while (buffer.hasRemaining()) {
-                System.out.println("channels = " + channels);
-                for (Iterator<SocketChannel> it = channels.iterator(); it.hasNext();) {
-                    SocketChannel ch = it.next();
-                    if(!ch.isConnected()) {
-                        it.remove();
-                    } else {
-                        ch.write(it.hasNext() ? buffer.duplicate() : buffer);
-                    }
-                }
-            }
-
-            buffer.clear();        
+        buffer.clear();
+        int read;
+        while( (read = socketChannel.read(buffer)) > 0 ) {
+            buffer.flip();
+            byte[] bytes = new byte[buffer.limit()];
+            buffer.get(bytes);
+            stringBuilder.append(new String(bytes));
+            buffer.clear();
         }
-
-        if (count < 0) {
+        String msg;
+        if(read<0) {
+            msg = "left the chat.\n";
+            System.out.print(msg);
             socketChannel.close();
         }
-    }
+        else {
+            msg = stringBuilder.toString();
+            System.out.print(formatMsg(msg));
+            sendMsg(msg);
+        }
 
-
-    private void sayHello (SocketChannel channel)
-            throws Exception
-    {
-        buffer.clear();
-        long currentTime = System.currentTimeMillis();
-        buffer.flip(  );
-
-        System.out.println("hel");
-        channel.write (buffer);
-
-        System.out.println("afteHel");
 
     }
 
+    private void sendMsg(String msg) throws IOException {
+        ByteBuffer byteBuffer=ByteBuffer.wrap(msg.getBytes());
+        for(SelectionKey key : selector.keys()) {
+            if(key.isValid() && key.channel() instanceof SocketChannel) {
+                SocketChannel socketChannel=(SocketChannel) key.channel();
+                socketChannel.write(byteBuffer);
+                byteBuffer.rewind();
+            }
+        }
+    }
+
+
+    private String formatMsg(String str){
+        int d1 = str.indexOf("\0");
+        int d2 = str.indexOf("\0", d1+1);
+        String millisStr = str.substring(0, d1);
+        String  name = str.substring(d1+1, d2);
+        String text = str.substring(d2+1);
+
+        long millisLong = Long.parseLong(millisStr);
+        Date time = new Date(millisLong);
+        SimpleDateFormat dt1 = new SimpleDateFormat("HH:mm:ss.SSS");
+        String dtime = dt1.format(time);
+
+        return ("<" + dtime + "> "+ name + ": "+ text);
+    }
 }
+
 
