@@ -1,23 +1,29 @@
 # NetworksLab2020
 ServerNIO.java - серверное приложение; ClientNIO.java - клиентское приложение; input - входные данные; cycle - скрипт для генерации 100 подключений.
 
+##
+Скомпилировать проект:
+```bash
+mvn clean compile package
+```
+
 ## Запуск приложения
 
 Запуск сервера
 
 ```bash
-java -cp tcp-1.0-SNAPSHOT.jar ServerNIO
+java -cp target/tcp-1.0-SNAPSHOT.jar ServerNIO
 ```
 
 Запуск клиента
 
 ```bash
-java -cp tcp-1.0-SNAPSHOT.jar ClientNIO
+java -cp target/tcp-1.0-SNAPSHOT.jar Client
 ```
 ip - localhost;
 port = 1234;
 
-Запуск скрипта 
+Запуск скрипта (работает только для ClientNIO)
 
 ```bash
 ./cycle
